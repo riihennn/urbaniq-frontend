@@ -78,8 +78,13 @@ export default function NewPropertyWizard() {
         }
         break
       case 2:
-        if (!formData.bedrooms || !formData.bathrooms || !formData.area) {
-           return "Please fill out all property features."
+        {
+          const showBedrooms = formData.propertyType !== 'Land' && formData.propertyType !== 'Commercial';
+          const showBathrooms = formData.propertyType !== 'Land';
+          
+          if ((showBedrooms && !formData.bedrooms) || (showBathrooms && !formData.bathrooms) || !formData.area) {
+             return "Please fill out all property features."
+          }
         }
         // TODO: Make images mandatory after deployment
         // if (formData.imagesUploaded === 0) {
@@ -133,6 +138,18 @@ export default function NewPropertyWizard() {
     setError("")
 
     try {
+      const features: any = {
+        area: Number(formData.area)
+      };
+      
+      if (formData.propertyType !== 'Land' && formData.propertyType !== 'Commercial') {
+        features.bedrooms = Number(formData.bedrooms);
+      }
+      
+      if (formData.propertyType !== 'Land') {
+        features.bathrooms = Number(formData.bathrooms);
+      }
+
       const payload = {
         title: formData.title,
         description: formData.description,
@@ -144,11 +161,7 @@ export default function NewPropertyWizard() {
           state: formData.state,
           zipCode: formData.zipCode
         },
-        features: {
-          bedrooms: Number(formData.bedrooms),
-          bathrooms: Number(formData.bathrooms),
-          area: Number(formData.area)
-        },
+        features,
         images: formData.imagesUploaded > 0 ? [
            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2075&q=80",
            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
@@ -290,14 +303,18 @@ export default function NewPropertyWizard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Bedrooms</label>
-                  <Input name="bedrooms" type="number" min="0" value={formData.bedrooms} onChange={handleChange} placeholder="3" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Bathrooms</label>
-                  <Input name="bathrooms" type="number" min="0" step="0.5" value={formData.bathrooms} onChange={handleChange} placeholder="2.5" />
-                </div>
+                {formData.propertyType !== 'Land' && formData.propertyType !== 'Commercial' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Bedrooms</label>
+                    <Input name="bedrooms" type="number" min="0" value={formData.bedrooms} onChange={handleChange} placeholder="3" />
+                  </div>
+                )}
+                {formData.propertyType !== 'Land' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Bathrooms</label>
+                    <Input name="bathrooms" type="number" min="0" step="0.5" value={formData.bathrooms} onChange={handleChange} placeholder="2.5" />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Area (sqft)</label>
                   <Input name="area" type="number" min="0" value={formData.area} onChange={handleChange} placeholder="2500" />

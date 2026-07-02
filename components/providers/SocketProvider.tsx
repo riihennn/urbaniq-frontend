@@ -19,8 +19,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (isAuthenticated && user?._id) {
+      // Derive the base server URL by stripping /api from the API URL
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+      const socketUrl = apiUrl.replace(/\/api$/, '');
+      
       // Initialize socket connection
-      const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+      const socketInstance = io(socketUrl, {
         withCredentials: true,
       })
 

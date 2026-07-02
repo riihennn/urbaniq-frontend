@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Building, Home, UserCheck } from "lucide-react"
 import api from "@/lib/api"
 import { useAuthStore } from "@/store/authStore"
+import { GoogleLogin } from "@react-oauth/google"
+import RoleSelectionModal from "@/components/auth/RoleSelectionModal"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -20,6 +22,8 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [tempToken, setTempToken] = useState<string | null>(null)
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,19 +31,64 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const response = await api.post("/auth/register", { firstName, lastName, email, password, role })
-      const { token, ...user } = response.data
-      setAuth(user, token)
-      
+      await api.post("/auth/register", { firstName, lastName, email, password, role })
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || "Registration failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError("")
+    setLoading(true)
+    const idToken = credentialResponse.credential
+
+    if (!idToken) {
+      setError("No credential received from Google")
+      setLoading(false)
+      return
+    }
+
+    try {
+      const response = await api.post("/auth/google", { idToken })
+      const data = response.data
+
+      if (data.isNewUser) {
+        setTempToken(idToken)
+        setIsModalOpen(true)
+      } else {
+        const { token, refreshToken, user } = data
+        setAuth(user, token, refreshToken)
+        if (user.role === 'Buyer') {
+          router.push('/')
+        } else {
+          router.push(`/dashboard/${user.role.toLowerCase()}`)
+        }
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || "Google authentication failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleOnboard = async (selectedRole: string) => {
+    if (!tempToken) return
+    try {
+      const response = await api.post("/auth/google/register", { idToken: tempToken, role: selectedRole })
+      const { token, refreshToken, ...user } = response.data
+      setAuth(user, token, refreshToken)
+      setIsModalOpen(false)
       if (user.role === 'Buyer') {
         router.push('/')
       } else {
         router.push(`/dashboard/${user.role.toLowerCase()}`)
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data?.error || "Registration failed")
-    } finally {
-      setLoading(false)
+      setError(err.response?.data?.message || err.response?.data?.error || "Google registration failed")
+      throw err
     }
   }
 
@@ -106,12 +155,43 @@ export default function RegisterPage() {
         </Button>
       </form>
       
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            Or continue with
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col space-y-4">
+        <div className="w-full flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError("Google registration failed")}
+            theme="outline"
+            size="large"
+            text="signup_with"
+            shape="rectangular"
+            width="380"
+          />
+        </div>
+      </div>
+
       <p className="px-8 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/login" className="font-semibold text-primary hover:underline">
           Sign In
         </Link>
       </p>
+
+      <RoleSelectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleGoogleOnboard}
+      />
     </div>
   )
 }

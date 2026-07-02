@@ -177,14 +177,31 @@ export default function PropertyDetailsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">
-                      A
+                      {property.agentId.firstName?.charAt(0) || 'A'}
                     </div>
                     <div>
-                      <p className="font-medium">Agent Assigned</p>
+                      <p className="font-medium">{property.agentId.firstName} {property.agentId.lastName}</p>
                       <p className="text-xs text-muted-foreground">Managing inquiries and visits</p>
                     </div>
                   </div>
                   <Button variant="outline" className="w-full">View Agent Profile</Button>
+                </div>
+              ) : property.latestAssignment && property.latestAssignment.status === 'Pending' ? (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 shrink-0">
+                      <span className="text-xs text-blue-600">⏳</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Assignment Pending</p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Waiting for {property.latestAssignment.agentId?.firstName} {property.latestAssignment.agentId?.lastName} to accept.
+                      </p>
+                    </div>
+                  </div>
+                  <Button className="w-full" variant="outline" disabled>
+                    Assignment Request Sent
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4">

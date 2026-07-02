@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import api from "@/lib/api"
 import { useAuthStore } from "@/store/authStore"
+import { GoogleLogin } from "@react-oauth/google"
+import RoleSelectionModal from "@/components/auth/RoleSelectionModal"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -15,6 +17,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [tempToken, setTempToken] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,8 +27,8 @@ export default function LoginPage() {
 
     try {
       const response = await api.post("/auth/login", { email, password })
-      const { token, ...user } = response.data
-      setAuth(user, token)
+      const { accessToken, refreshToken, ...user } = response.data
+      setAuth(user, accessToken, refreshToken)
       
       if (user.role === 'Buyer') {
         router.push('/dashboard/buyer')
@@ -35,6 +39,58 @@ export default function LoginPage() {
       setError(err.response?.data?.message || err.response?.data?.error || "Login failed")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError("")
+    setLoading(true)
+    const idToken = credentialResponse.credential
+
+    if (!idToken) {
+      setError("No credential received from Google")
+      setLoading(false)
+      return
+    }
+
+    try {
+      const response = await api.post("/auth/google", { idToken })
+      const data = response.data
+
+      if (data.isNewUser) {
+        setTempToken(idToken)
+        setIsModalOpen(true)
+      } else {
+        const { token, refreshToken, user } = data
+        setAuth(user, token, refreshToken)
+        if (user.role === 'Buyer') {
+          router.push('/')
+        } else {
+          router.push(`/dashboard/${user.role.toLowerCase()}`)
+        }
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || "Google authentication failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleOnboard = async (role: string) => {
+    if (!tempToken) return
+    try {
+      const response = await api.post("/auth/google/register", { idToken: tempToken, role })
+      const { token, refreshToken, ...user } = response.data
+      setAuth(user, token, refreshToken)
+      setIsModalOpen(false)
+      if (user.role === 'Buyer') {
+        router.push('/')
+      } else {
+        router.push(`/dashboard/${user.role.toLowerCase()}`)
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || "Google registration failed")
+      throw err
     }
   }
 
@@ -63,7 +119,7 @@ export default function LoginPage() {
             <label className="text-sm font-medium leading-none" htmlFor="password">
               Password
             </label>
-            <Link href="#" className="text-sm font-medium text-primary hover:underline">
+            <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
               Forgot?
             </Link>
           </div>
@@ -88,13 +144,18 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Button variant="outline" className="h-12 bg-transparent" type="button">
-          Google
-        </Button>
-        <Button variant="outline" className="h-12 bg-transparent" type="button">
-          Apple
-        </Button>
+      <div className="flex flex-col space-y-4">
+        <div className="w-full flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError("Google login failed")}
+            theme="outline"
+            size="large"
+            text="continue_with"
+            shape="rectangular"
+            width="380"
+          />
+        </div>
       </div>
 
       <p className="px-8 text-center text-sm text-muted-foreground">
@@ -103,6 +164,12 @@ export default function LoginPage() {
           Create Account
         </Link>
       </p>
+
+      <RoleSelectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleGoogleOnboard}
+      />
     </div>
   )
 }

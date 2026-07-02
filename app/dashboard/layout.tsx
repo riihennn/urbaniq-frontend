@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Building2, LayoutDashboard, Heart, Calendar, MessageSquare, Settings, LogOut, Plus, BarChart, Home, DollarSign } from "lucide-react"
@@ -13,21 +13,22 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, isAuthenticated, logout } = useAuthStore()
-  const [isClient, setIsClient] = useState(false)
+  const { user, isAuthenticated, hydrated, logout } = useAuthStore()
 
   useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  useEffect(() => {
-    if (isClient && !isAuthenticated) {
+    // Only redirect after the store has been hydrated from localStorage
+    if (hydrated && !isAuthenticated) {
       router.push("/login")
     }
-  }, [isClient, isAuthenticated, router])
+  }, [hydrated, isAuthenticated, router])
 
-  if (!isClient || !isAuthenticated) {
-    return null // or a loading spinner
+  // Show nothing until we've read localStorage — prevents flash redirect
+  if (!hydrated) {
+    return null
+  }
+
+  if (!isAuthenticated) {
+    return null
   }
 
   const handleLogout = () => {
