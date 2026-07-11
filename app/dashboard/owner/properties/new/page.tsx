@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import api from "@/lib/api"
-import { Building2, MapPin, ListPlus, Users, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Map as MapIcon, UploadCloud, Star, ShieldCheck, User, Search, X, Mail, Phone, Briefcase, TrendingUp, Award, ArrowRight } from "lucide-react"
+import { Building2, MapPin, ListPlus, Users, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Map as MapIcon, UploadCloud, Star, ShieldCheck, User, Search, X, Mail, Phone, Briefcase, TrendingUp, Award, ArrowRight, LocateFixed, DollarSign } from "lucide-react"
+
+const MapSelector = dynamic(() => import("@/components/ui/MapSelector"), { ssr: false, loading: () => <div className="h-[300px] w-full rounded-xl bg-muted animate-pulse flex items-center justify-center">Loading map...</div> })
 
 interface Agent {
   _id: string;
@@ -34,6 +37,7 @@ export default function NewPropertyWizard() {
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [isLocating, setIsLocating] = useState(false)
 
   // Agent Selection State
   const [managementOption, setManagementOption] = useState<"self" | "agent">("self")
@@ -48,7 +52,8 @@ export default function NewPropertyWizard() {
     { id: 2, title: 'Features & Docs' },
     { id: 3, title: 'Location' },
     { id: 4, title: 'Management' },
-    ...(managementOption === 'agent' ? [{ id: 5, title: 'Assign Agent' }] : [])
+    ...(managementOption === 'agent' ? [{ id: 5, title: 'Assign Agent' }] : []),
+    { id: managementOption === 'agent' ? 6 : 5, title: 'Platform Fee' }
   ]
 
   const [formData, setFormData] = useState({
@@ -63,9 +68,67 @@ export default function NewPropertyWizard() {
     bedrooms: "",
     bathrooms: "",
     area: "",
+    contactName: "",
+    contactEmail: "",
+    contactPhone: "",
     documentUploaded: false,
     imagesUploaded: 0,
   })
+
+  const handleUseCurrentLocation = () => {
+    if ("geolocation" in navigator) {
+      setIsLocating(true)
+      setError("")
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
+          const data = await res.json()
+          if (data && data.address) {
+            setFormData((prev) => ({
+              ...prev,
+              address: data.address.road || data.address.suburb || data.name || "",
+              city: data.address.city || data.address.town || data.address.village || data.address.county || "",
+              state: data.address.state || "",
+              zipCode: data.address.postcode || "",
+            }))
+          }
+        } catch (error) {
+          console.error("Failed to get location:", error)
+          setError("Failed to fetch address from location.")
+        } finally {
+          setIsLocating(false)
+        }
+      }, () => {
+        setError("Location access denied.")
+        setIsLocating(false)
+      })
+    } else {
+      setError("Geolocation is not supported by your browser.")
+    }
+  }
+
+  const handleMapLocationSelect = async (lat: number, lon: number) => {
+    try {
+      setIsLocating(true)
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+      const data = await res.json()
+      if (data && data.address) {
+        setFormData((prev) => ({
+          ...prev,
+          address: data.address.road || data.address.suburb || data.name || "",
+          city: data.address.city || data.address.town || data.address.village || data.address.county || "",
+          state: data.address.state || "",
+          zipCode: data.address.postcode || "",
+        }))
+      }
+    } catch (error) {
+      console.error("Failed to get location from map:", error)
+      setError("Failed to fetch address from map pin.")
+    } finally {
+      setIsLocating(false)
+    }
+  }
 
   useEffect(() => {
     if (managementOption === "agent" && agents.length === 0) {
@@ -91,6 +154,24 @@ export default function NewPropertyWizard() {
       case 1:
         if (!formData.title || !formData.description || !formData.price || !formData.propertyType) {
            return "Please fill out all basic property details."
+        }
+        if (formData.title.length < 5) {
+           return "Title must be at least 5 characters long."
+        }
+        if (formData.title.length > 100) {
+           return "Title cannot exceed 100 characters."
+        }
+        if (formData.description.length < 10) {
+           return "Description must be at least 10 characters long."
+        }
+        if (Number(formData.price) <= 0) {
+           return "Price must be a positive number."
+        }
+        if (!formData.contactName || !formData.contactEmail || !formData.contactPhone) {
+           return "Please provide all contact details."
+        }
+        if (!/^\S+@\S+\.\S+$/.test(formData.contactEmail)) {
+           return "Please enter a valid email address."
         }
         break
       case 2:
@@ -119,10 +200,76 @@ export default function NewPropertyWizard() {
       case 4:
         break
       case 5:
-        if (!selectedAgentId) return "Please select an agent to assign."
+        if (managementOption === 'agent' && !selectedAgentId) return "Please select an agent to assign."
+        break
+      case 6:
         break
     }
     return null
+  }
+
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/checkout.js"
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
+  }
+
+  const handlePaymentInitiation = async () => {
+    const err = validateStep()
+    if (err) {
+      setError(err)
+      return
+    }
+
+    setLoading(true)
+    setError("")
+
+    const isLoaded = await loadRazorpay()
+    if (!isLoaded) {
+      setError("Razorpay SDK failed to load")
+      setLoading(false)
+      return
+    }
+
+    try {
+      const orderRes = await api.post("/payments/create-order", { amount: 500000 })
+      const order = orderRes.data.order
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_dummy',
+        amount: order.amount,
+        currency: order.currency,
+        name: "Urbaniq",
+        description: "Platform Fee for Property Listing",
+        order_id: order.id,
+        handler: async function (response: any) {
+          await handleSubmit(response.razorpay_payment_id)
+        },
+        prefill: {
+          name: formData.contactName,
+          email: formData.contactEmail,
+          contact: formData.contactPhone
+        },
+        theme: {
+          color: "#1a1b26"
+        }
+      }
+      
+      const rzp = new (window as any).Razorpay(options)
+      rzp.on('payment.failed', function (response: any) {
+        setError(response.error.description || "Payment failed")
+        setLoading(false)
+      })
+      rzp.open()
+    } catch (err: any) {
+      console.error(err)
+      setError("Failed to initiate payment")
+      setLoading(false)
+    }
   }
 
   const handleNext = () => {
@@ -145,7 +292,7 @@ export default function NewPropertyWizard() {
     }
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (paymentId?: string) => {
     const err = validateStep()
     if (err) {
       setError(err)
@@ -180,6 +327,11 @@ export default function NewPropertyWizard() {
           zipCode: formData.zipCode
         },
         features,
+        contactDetails: {
+          name: formData.contactName,
+          email: formData.contactEmail,
+          phone: formData.contactPhone
+        },
         images: formData.imagesUploaded > 0 ? [
            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2075&q=80",
            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
@@ -308,6 +460,25 @@ export default function NewPropertyWizard() {
                     </select>
                   </div>
                 </div>
+
+                <div className="pt-6 border-t mt-8">
+                  <h3 className="text-lg font-semibold mb-4">Contact Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Full Name</label>
+                      <Input name="contactName" value={formData.contactName} onChange={handleChange} placeholder="John Doe" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Email</label>
+                      <Input name="contactEmail" type="email" value={formData.contactEmail} onChange={handleChange} placeholder="johndoe@example.com" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone</label>
+                      <Input name="contactPhone" type="tel" value={formData.contactPhone} onChange={handleChange} placeholder="+1 (555) 123-4567" />
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
@@ -439,9 +610,21 @@ export default function NewPropertyWizard() {
           {/* STEP 3: Location */}
           {currentStep === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">Property Location</h2>
-                <p className="text-muted-foreground mb-8">Where is your property located?</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">Property Location</h2>
+                  <p className="text-muted-foreground">Where is your property located?</p>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleUseCurrentLocation}
+                  disabled={isLocating}
+                  className="shrink-0 bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
+                >
+                  <LocateFixed className={`w-4 h-4 mr-2 ${isLocating ? 'animate-spin' : ''}`} />
+                  {isLocating ? 'Locating...' : 'Use Current Location'}
+                </Button>
               </div>
 
               <div className="space-y-4">
@@ -465,21 +648,12 @@ export default function NewPropertyWizard() {
                   </div>
                 </div>
 
-                <div className="mt-6 relative h-[300px] rounded-xl overflow-hidden border">
-                  <div className="absolute inset-0 bg-blue-100/50 flex items-center justify-center z-10 pointer-events-none">
-                     <div className="bg-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium text-primary">
-                        <MapIcon className="w-4 h-4" /> Location Map
-                     </div>
-                  </div>
-                  <Image 
-                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80" 
-                    alt="Map placeholder"
-                    fill
-                    className="object-cover opacity-80"
-                  />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-red-500 z-20">
-                     <MapPin className="w-12 h-12 fill-red-500/20" />
-                  </div>
+                <div className="mt-6">
+                  <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <MapIcon className="w-4 h-4 text-muted-foreground" /> 
+                    Or click anywhere on the map to pin the exact location:
+                  </p>
+                  <MapSelector onLocationSelect={handleMapLocationSelect} />
                 </div>
               </div>
             </div>
@@ -529,7 +703,7 @@ export default function NewPropertyWizard() {
           )}
           
           {/* STEP 5: Assign Agent */}
-          {currentStep === 5 && (() => {
+          {currentStep === 5 && managementOption === 'agent' && (() => {
             const filteredAgents = agents.filter(a =>
               `${a.firstName} ${a.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
               a.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -716,6 +890,35 @@ export default function NewPropertyWizard() {
               </div>
             )
           })()}
+
+          {/* STEP PAYMENT */}
+          {currentStep === (managementOption === 'agent' ? 6 : 5) && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-center py-10">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <DollarSign className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-3xl font-bold mb-2">Platform Fee</h2>
+              <p className="text-muted-foreground max-w-md mx-auto mb-8">
+                To list your property and reach thousands of verified buyers, a one-time platform fee of <span className="font-bold text-foreground">₹5,000</span> is required.
+              </p>
+              
+              <div className="bg-muted/30 p-6 rounded-xl border max-w-sm mx-auto space-y-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Listing Fee</span>
+                  <span className="font-medium">₹4,237.29</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">GST (18%)</span>
+                  <span className="font-medium">₹762.71</span>
+                </div>
+                <div className="h-px bg-border my-2" />
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>₹5,000.00</span>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Error Message */}
           {error && (
             <div className="mt-6 text-destructive bg-destructive/10 p-4 rounded-lg font-medium text-sm flex items-center gap-2 animate-in fade-in">
@@ -741,8 +944,8 @@ export default function NewPropertyWizard() {
                 Next Step <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
-              <Button type="button" onClick={handleSubmit} disabled={loading} size="lg" className="px-10 font-semibold shadow-md">
-                {loading ? "Submitting..." : "Submit Listing"}
+              <Button type="button" onClick={handlePaymentInitiation} disabled={loading} size="lg" className="px-10 font-semibold shadow-md bg-[#1a1b26] hover:bg-[#1a1b26]/90 text-white">
+                {loading ? "Processing..." : "Pay ₹5,000 & Submit"}
               </Button>
             )}
           </div>

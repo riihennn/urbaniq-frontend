@@ -21,6 +21,7 @@ interface AuthState {
   isAuthenticated: boolean;
   hydrated: boolean; // true after localStorage has been read
   setAuth: (user: User, token: string, refreshToken: string) => void;
+  updateUser: (user: Partial<User>) => void;
   setIsVerified: (isVerified: boolean) => void;
   logout: () => Promise<void>;
   initialize: () => void;
@@ -40,6 +41,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem('urbaniq_user', JSON.stringify(user));
     }
     set({ user, token, refreshToken, isAuthenticated: true });
+  },
+
+  updateUser: (updates) => {
+    set((state) => {
+      if (state.user) {
+        const updatedUser = { ...state.user, ...updates };
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('urbaniq_user', JSON.stringify(updatedUser));
+        }
+        return { user: updatedUser };
+      }
+      return {};
+    });
   },
 
   setIsVerified: (isVerified) => {

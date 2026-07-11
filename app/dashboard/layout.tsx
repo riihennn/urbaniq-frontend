@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Building2, LayoutDashboard, Heart, Calendar, MessageSquare, Settings, LogOut, Plus, BarChart, Home, DollarSign } from "lucide-react"
+import { Building2, LayoutDashboard, Bookmark, Calendar, MessageSquare, Settings, LogOut, Plus, BarChart, Home, DollarSign, CheckCircle, Briefcase } from "lucide-react"
 import { useAuthStore } from "@/store/authStore"
 import { Logo } from "@/components/ui/Logo"
 
@@ -58,7 +58,7 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-background h-full">
         <div className="flex h-16 items-center px-4 border-b flex-shrink-0">
-          <Logo height={44} />
+          <Logo height={44} href={user?.role ? `/dashboard/${user.role.toLowerCase()}` : '/'} />
         </div>
         
         <div className="flex-1 overflow-y-auto py-4">
@@ -78,10 +78,7 @@ export default function DashboardLayout({
                   <Plus className="h-4 w-4" />
                   <span className="text-sm">Add Property</span>
                 </Link>
-                <Link href="/dashboard/owner/offers" className={getLinkClass("/dashboard/owner/offers")}>
-                  <DollarSign className="h-4 w-4" />
-                  <span className="text-sm">Offers</span>
-                </Link>
+
                 <Link href="/dashboard/owner/inquiries" className={getLinkClass("/dashboard/owner/inquiries")}>
                   <MessageSquare className="h-4 w-4" />
                   <span className="text-sm">Inquiries</span>
@@ -90,27 +87,20 @@ export default function DashboardLayout({
                   <Calendar className="h-4 w-4" />
                   <span className="text-sm">Visits</span>
                 </Link>
-                <Link href="/dashboard/owner/analytics" className={getLinkClass("/dashboard/owner/analytics")}>
-                  <BarChart className="h-4 w-4" />
-                  <span className="text-sm">Analytics</span>
-                </Link>
               </>
             )}
 
             {user?.role === 'Agent' && (
               <>
                 <Link href="/dashboard/agent/assignments" className={getLinkClass("/dashboard/agent/assignments")}>
-                  <Heart className="h-4 w-4" />
+                  <Bookmark className="h-4 w-4" />
                   <span className="text-sm">Assignments</span>
                 </Link>
                 <Link href="/dashboard/agent/properties" className={getLinkClass("/dashboard/agent/properties")}>
                   <Building2 className="h-4 w-4" />
                   <span className="text-sm">Assigned Properties</span>
                 </Link>
-                <Link href="/dashboard/agent/offers" className={getLinkClass("/dashboard/agent/offers")}>
-                  <DollarSign className="h-4 w-4" />
-                  <span className="text-sm">Offers</span>
-                </Link>
+
                 <Link href="/dashboard/agent/inquiries" className={getLinkClass("/dashboard/agent/inquiries")}>
                   <MessageSquare className="h-4 w-4" />
                   <span className="text-sm">Buyer Inquiries</span>
@@ -119,23 +109,16 @@ export default function DashboardLayout({
                   <Calendar className="h-4 w-4" />
                   <span className="text-sm">Visit Schedule</span>
                 </Link>
-                <Link href="/dashboard/agent/analytics" className={getLinkClass("/dashboard/agent/analytics")}>
-                  <BarChart className="h-4 w-4" />
-                  <span className="text-sm">Performance</span>
-                </Link>
               </>
             )}
 
             {user?.role === 'Buyer' && (
               <>
                 <Link href="/dashboard/buyer/saved" className={getLinkClass("/dashboard/buyer/saved")}>
-                  <Heart className="h-4 w-4" />
+                  <Bookmark className="h-4 w-4" />
                   <span className="text-sm">Saved Properties</span>
                 </Link>
-                <Link href="/dashboard/buyer/offers" className={getLinkClass("/dashboard/buyer/offers")}>
-                  <BarChart className="h-4 w-4" />
-                  <span className="text-sm">My Offers</span>
-                </Link>
+
                 <Link href="/dashboard/buyer/visits" className={getLinkClass("/dashboard/buyer/visits")}>
                   <Calendar className="h-4 w-4" />
                   <span className="text-sm">Scheduled Visits</span>
@@ -146,16 +129,39 @@ export default function DashboardLayout({
                 </Link>
               </>
             )}
+
+            {user?.role === 'Admin' && (
+              <>
+                <Link href="/dashboard/admin/users" className={getLinkClass("/dashboard/admin/users")}>
+                  <Settings className="h-4 w-4" />
+                  <span className="text-sm">Manage Users</span>
+                </Link>
+                <Link href="/dashboard/admin/agents" className={getLinkClass("/dashboard/admin/agents")}>
+                  <Briefcase className="h-4 w-4" />
+                  <span className="text-sm">Manage Agents</span>
+                </Link>
+                <Link href="/dashboard/admin/properties" className={getLinkClass("/dashboard/admin/properties")}>
+                  <Building2 className="h-4 w-4" />
+                  <span className="text-sm">All Properties</span>
+                </Link>
+                <Link href="/dashboard/admin/approvals" className={getLinkClass("/dashboard/admin/approvals")}>
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm">Property Approvals</span>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
         
         <div className="border-t p-4 flex-shrink-0">
           <nav className="grid gap-1">
-            <Link href="/" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5">
-              <Home className="h-4 w-4" />
-              <span className="text-sm font-medium">Back to Home</span>
-            </Link>
-            <Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5">
+            {(user?.role === 'Buyer' || user?.role === 'Owner') && (
+              <Link href="/" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5">
+                <Home className="h-4 w-4" />
+                <span className="text-sm font-medium">Back to Home</span>
+              </Link>
+            )}
+            <Link href="/settings" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/5">
               <Settings className="h-4 w-4" />
               <span className="text-sm font-medium">Settings</span>
             </Link>

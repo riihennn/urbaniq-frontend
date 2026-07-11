@@ -1,3 +1,7 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { Search, MapPin, Building, ChevronRight, CheckCircle2, Shield, Gem } from "lucide-react"
@@ -7,13 +11,38 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge"
 
 export default function LandingPage() {
+  const router = useRouter()
+  const [location, setLocation] = useState("")
+  const [priceRange, setPriceRange] = useState("")
+  const [propertyType, setPropertyType] = useState("")
+
+  const handleSearch = () => {
+    const params = new URLSearchParams()
+    if (location) params.append("city", location)
+    if (propertyType) params.append("type", propertyType)
+    
+    if (priceRange) {
+      if (priceRange === "1M - 5M") {
+        params.append("minPrice", "1000000")
+        params.append("maxPrice", "5000000")
+      } else if (priceRange === "5M - 10M") {
+        params.append("minPrice", "5000000")
+        params.append("maxPrice", "10000000")
+      } else if (priceRange === "10M+") {
+        params.append("minPrice", "10000000")
+      }
+    }
+
+    router.push(`/properties?${params.toString()}`)
+  }
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center bg-black overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
-            src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2075&q=80"
+            src="/urbaniq-home-image.jpg"
             alt="Luxury modern home"
             fill
             className="object-cover opacity-60"
@@ -31,20 +60,31 @@ export default function LandingPage() {
           {/* Search Bar */}
           <div className="bg-white p-3 rounded-xl max-w-4xl mx-auto shadow-2xl flex flex-col md:flex-row gap-3 items-end md:items-center">
             <div className="w-full">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 block text-left ml-2">Location</label>
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 block text-left ml-2">Location (City)</label>
               <div className="flex items-center gap-2 border-b md:border-b-0 md:border-r pb-2 md:pb-0 md:pr-4">
                 <MapPin className="h-4 w-4 text-primary ml-2" />
-                <Input type="text" placeholder="Dubai Marina, UAE" className="border-0 shadow-none focus-visible:ring-0 p-0 text-sm font-medium h-8" />
+                <Input 
+                  type="text" 
+                  placeholder="Dubai, London, New York..." 
+                  className="border-0 shadow-none focus-visible:ring-0 p-0 text-sm font-medium h-8"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
               </div>
             </div>
             <div className="w-full">
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 block text-left ml-2">Price Range</label>
               <div className="flex items-center gap-2 border-b md:border-b-0 md:border-r pb-2 md:pb-0 md:pr-4">
                 <span className="text-primary font-bold ml-2 text-sm">$</span>
-                <select className="w-full bg-transparent border-0 focus:ring-0 p-0 text-sm font-medium text-foreground outline-none h-8">
-                  <option>1M - 5M</option>
-                  <option>5M - 10M</option>
-                  <option>10M+</option>
+                <select 
+                  className="w-full bg-transparent border-0 focus:ring-0 p-0 text-sm font-medium text-foreground outline-none h-8"
+                  value={priceRange}
+                  onChange={(e) => setPriceRange(e.target.value)}
+                >
+                  <option value="">Any Price</option>
+                  <option value="1M - 5M">1M - 5M</option>
+                  <option value="5M - 10M">5M - 10M</option>
+                  <option value="10M+">10M+</option>
                 </select>
               </div>
             </div>
@@ -52,15 +92,20 @@ export default function LandingPage() {
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 block text-left ml-2">Property Type</label>
               <div className="flex items-center gap-2 border-b md:border-b-0 md:border-r pb-2 md:pb-0 md:pr-4">
                 <Building className="h-4 w-4 text-primary ml-2" />
-                <select className="w-full bg-transparent border-0 focus:ring-0 p-0 text-sm font-medium text-foreground outline-none h-8">
-                  <option>Penthouse</option>
-                  <option>Villa</option>
-                  <option>Apartment</option>
-                  <option>Commercial</option>
+                <select 
+                  className="w-full bg-transparent border-0 focus:ring-0 p-0 text-sm font-medium text-foreground outline-none h-8"
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                >
+                  <option value="">Any Type</option>
+                  <option value="Penthouse">Penthouse</option>
+                  <option value="Villa">Villa</option>
+                  <option value="Apartment">Apartment</option>
+                  <option value="Commercial">Commercial</option>
                 </select>
               </div>
             </div>
-            <Button size="default" className="w-full md:w-auto shrink-0 h-12 px-8 rounded-lg text-sm bg-primary hover:bg-primary/90 text-white">
+            <Button size="default" onClick={handleSearch} className="w-full md:w-auto shrink-0 h-12 px-8 rounded-lg text-sm bg-primary hover:bg-primary/90 text-white">
               <Search className="mr-2 h-4 w-4" /> Search
             </Button>
           </div>

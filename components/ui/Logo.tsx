@@ -10,6 +10,8 @@ interface LogoProps {
   className?: string
   /** Use "white" on dark backgrounds — inverts the black logo to white */
   variant?: "default" | "white"
+  /** URL to redirect to */
+  href?: string
 }
 
 export function Logo({
@@ -17,6 +19,7 @@ export function Logo({
   asLink = true,
   className = "",
   variant = "default",
+  href = "/",
 }: LogoProps) {
   // Actual PNG dimensions: 819 x 305 → ratio 2.685:1
   const width = Math.round(height * 2.685)
@@ -38,7 +41,7 @@ export function Logo({
 
   if (asLink) {
     return (
-      <Link href="/" className={`inline-flex items-center shrink-0 ${className}`}>
+      <Link href={href} className={`inline-flex items-center shrink-0 ${className}`}>
         {img}
       </Link>
     )

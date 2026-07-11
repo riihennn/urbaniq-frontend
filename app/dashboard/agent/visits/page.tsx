@@ -57,9 +57,15 @@ export default function AgentVisitsPage() {
       }
     }
 
+    const handleVisitUpdated = (updatedVisit: any) => {
+      setVisits(prev => prev.map(v => v._id === updatedVisit._id ? { ...v, status: updatedVisit.status } : v))
+    }
+
     socket.on('new_interaction', handleNewInteraction)
+    socket.on('visit_updated', handleVisitUpdated)
     return () => {
       socket.off('new_interaction', handleNewInteraction)
+      socket.off('visit_updated', handleVisitUpdated)
     }
   }, [socket])
 

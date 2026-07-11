@@ -212,6 +212,13 @@ export default function OwnerVisitsPage() {
                               </Button>
                             </div>
                           )}
+                          {visit.status === 'Accepted' && (
+                            <div className="flex gap-2 shrink-0">
+                               <Button variant="outline" size="sm" onClick={() => updateVisitStatus(visit._id, 'Completed')} className="gap-1.5 border-blue-200 hover:bg-blue-50 text-blue-700">
+                                Mark Completed
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

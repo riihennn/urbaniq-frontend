@@ -1,39 +1,28 @@
 "use client"
 
-import { formatDistanceToNow } from "date-fns"
-import { useSocket } from "@/components/providers/SocketProvider"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Building2, MessageSquare, Clock, MapPin } from "lucide-react"
+import { MessageSquare } from "lucide-react"
 import api from "@/lib/api"
 import { Button } from "@/components/ui/button"
+import ChatBox from "@/components/ui/ChatBox"
 
 export default function BuyerInquiriesPage() {
   const [inquiries, setInquiries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const { socket } = useSocket()
+  const [activeChat, setActiveChat] = useState<string | null>(null)
 
   useEffect(() => {
     fetchInquiries()
   }, [])
 
-  useEffect(() => {
-    if (!socket) return
-
-    const handleInquiryUpdate = (updatedInquiry: any) => {
-      setInquiries(prev => prev.map(i => i._id === updatedInquiry._id ? { ...i, status: updatedInquiry.status, replyMessage: updatedInquiry.replyMessage } : i))
-    }
-
-    socket.on('inquiry_updated', handleInquiryUpdate)
-    return () => {
-      socket.off('inquiry_updated', handleInquiryUpdate)
-    }
-  }, [socket])
-
   const fetchInquiries = async () => {
     try {
       const res = await api.get("/interactions/inquiries")
       setInquiries(res.data)
+      if (res.data.length > 0 && !activeChat) {
+        setActiveChat(res.data[0]._id)
+      }
     } catch (err) {
       console.error("Failed to fetch inquiries:", err)
     } finally {
@@ -41,82 +30,94 @@ export default function BuyerInquiriesPage() {
     }
   }
 
-  const handleCloseInquiry = async (inquiryId: string) => {
-    try {
-      await api.put(`/interactions/inquiries/${inquiryId}`, { status: 'Closed' })
-      setInquiries(prev => prev.map(i => i._id === inquiryId ? { ...i, status: 'Closed' } : i))
-    } catch (err) {
-      alert("Failed to close inquiry")
-    }
-  }
+  if (loading) return <div className="p-8">Loading chats...</div>
 
-  if (loading) return <div>Loading...</div>
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Sent Inquiries</h1>
-        <p className="text-muted-foreground mt-1">Track questions you've sent to agents and owners.</p>
-      </div>
-
-      {inquiries.length === 0 ? (
+  if (inquiries.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
+          <p className="text-muted-foreground mt-1">Chat with property hosts.</p>
+        </div>
         <div className="text-center py-20 bg-muted/30 rounded-xl border border-dashed">
           <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-          <h3 className="text-xl font-bold mb-2">No inquiries sent yet</h3>
-          <p className="text-muted-foreground mb-6">You haven't contacted any property representatives.</p>
+          <h3 className="text-xl font-bold mb-2">No chats yet</h3>
+          <p className="text-muted-foreground mb-6">You haven't started any conversations with property hosts.</p>
           <Button asChild>
             <Link href="/properties">Browse Properties</Link>
           </Button>
         </div>
-      ) : (
-        <div className="grid gap-6">
-          {inquiries.map(inquiry => (
-            <div key={inquiry._id} className="p-6 bg-card rounded-xl border shadow-sm space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider
-                      ${inquiry.status === 'Resolved' ? 'bg-green-100 text-green-700' :
-                        inquiry.status === 'Open' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'}`}>
-                      {inquiry.status}
-                    </span>
-                    <span className="text-sm text-muted-foreground flex items-center">
-                      <Clock className="mr-1 h-3.5 w-3.5" /> Sent on {new Date(inquiry.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <Link href={`/properties/${inquiry.propertyId?._id}`} className="text-xl font-bold hover:underline inline-block">
-                    {inquiry.propertyId?.title || "Unknown Property"}
-                  </Link>
-                  <p className="text-sm text-muted-foreground flex items-center">
-                    <MapPin className="mr-1 h-4 w-4" /> {inquiry.propertyId?.location?.city}, {inquiry.propertyId?.location?.state}
-                  </p>
-                </div>
-                
-                {inquiry.status !== 'Closed' && (
-                  <Button variant="outline" size="sm" onClick={() => handleCloseInquiry(inquiry._id)}>
-                    Close Inquiry
-                  </Button>
-                )}
-              </div>
+      </div>
+    )
+  }
 
-              <div className="space-y-4">
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Your Message</p>
-                  <p className="text-sm leading-relaxed">{inquiry.message}</p>
-                </div>
-
-                {inquiry.replyMessage && (
-                  <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
-                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Reply</p>
-                    <p className="text-sm leading-relaxed">{inquiry.replyMessage}</p>
+  return (
+    <div className="flex flex-col h-[calc(100vh-8rem)]">
+      <div className="mb-4 shrink-0">
+        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
+      </div>
+      
+      <div className="flex flex-1 gap-4 overflow-hidden">
+        {/* Chat List (Sidebar) */}
+        <div className="w-1/3 bg-card border rounded-xl flex flex-col overflow-hidden shrink-0">
+          <div className="p-4 border-b bg-muted/30">
+            <h2 className="font-bold text-lg">My Chats</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {inquiries.map((inquiry) => {
+              const image = inquiry.propertyId?.images?.[0] || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
+              return (
+              <div 
+                key={inquiry._id} 
+                className={`p-4 border-b cursor-pointer transition-colors flex items-start gap-3 ${activeChat === inquiry._id ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-muted/50 border-l-4 border-l-transparent'}`}
+                onClick={() => setActiveChat(inquiry._id)}
+              >
+                <img src={image} alt="Property" className="w-10 h-10 rounded-md object-cover shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">{inquiry.propertyId?.title || "Property Chat"}</div>
+                  <div className="text-sm truncate text-muted-foreground">
+                    {(() => {
+                      const partner = inquiry.propertyId?.agentId || inquiry.propertyId?.ownerId;
+                      const role = inquiry.propertyId?.agentId ? "Agent" : "Owner";
+                      if (partner && typeof partner === 'object' && partner.firstName) {
+                        return `${role}: ${partner.firstName} ${partner.lastName}`;
+                      }
+                      return "Property Host";
+                    })()}
                   </div>
-                )}
+                  <div className="text-xs text-muted-foreground mt-1 flex justify-end">
+                    <span>{new Date(inquiry.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            )})}
+          </div>
         </div>
-      )}
+
+        {/* Chat Area */}
+        <div className="flex-1 bg-card border rounded-xl overflow-hidden min-w-0">
+          {activeChat ? (
+            <ChatBox 
+              inquiryId={activeChat} 
+              propertyTitle={inquiries.find(i => i._id === activeChat)?.propertyId?.title}
+              propertyImage={inquiries.find(i => i._id === activeChat)?.propertyId?.images?.[0]}
+              chatPartnerName={(() => {
+                const activeInq = inquiries.find(i => i._id === activeChat);
+                const partner = activeInq?.propertyId?.agentId || activeInq?.propertyId?.ownerId;
+                if (partner && typeof partner === 'object' && partner.firstName) {
+                  return `${partner.firstName} ${partner.lastName}`;
+                }
+                return undefined;
+              })()}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground flex-col bg-muted/10">
+              <MessageSquare className="h-12 w-12 mb-4 opacity-50" />
+              <p>Select a chat to start messaging</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

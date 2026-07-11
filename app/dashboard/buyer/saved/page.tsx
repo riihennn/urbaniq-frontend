@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, MapPin, BedDouble, Bath, Square, Trash2 } from "lucide-react"
+import { Bookmark, MapPin, BedDouble, Bath, Square, Trash2 } from "lucide-react"
 import api from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -47,7 +47,7 @@ export default function BuyerSavedPropertiesPage() {
 
       {properties.length === 0 ? (
         <div className="text-center py-20 bg-muted/30 rounded-xl border border-dashed">
-          <Heart className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+          <Bookmark className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
           <h3 className="text-xl font-bold mb-2">No saved properties</h3>
           <p className="text-muted-foreground mb-6">You haven't saved any properties to your wishlist yet.</p>
           <Button asChild>

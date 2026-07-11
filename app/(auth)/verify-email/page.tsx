@@ -96,8 +96,11 @@ function VerifyEmailForm() {
       setSuccess("Email verified successfully! Redirecting...")
       
       setTimeout(() => {
-        const dashboardRole = verifiedUser.role.toLowerCase()
-        router.push(`/dashboard/${dashboardRole}`)
+        if (verifiedUser.role === 'Buyer' || verifiedUser.role === 'Owner') {
+          router.push('/')
+        } else {
+          router.push(`/dashboard/${verifiedUser.role.toLowerCase()}`)
+        }
       }, 1500)
     } catch (err: any) {
       setError(err.response?.data?.message || err.response?.data?.error || "Verification failed. Please check the code.")

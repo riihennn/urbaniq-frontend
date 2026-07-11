@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import api from "@/lib/api"
 import { Check, X, MapPin, Building2, FileText, User } from "lucide-react"
 import { useSocket } from "@/components/providers/SocketProvider"
+import { useRouter } from "next/navigation"
 
 interface Assignment {
   _id: string;
@@ -29,6 +30,7 @@ interface Assignment {
 }
 
 export default function AgentAssignmentsPage() {
+  const router = useRouter()
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -100,7 +102,11 @@ export default function AgentAssignmentsPage() {
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {pendingAssignments.map((assignment) => (
-              <Card key={assignment._id} className="overflow-hidden border-primary/20 shadow-md">
+              <Card 
+                key={assignment._id} 
+                className="overflow-hidden border-primary/20 shadow-md cursor-pointer hover:shadow-lg transition-all"
+                onClick={() => router.push(`/dashboard/agent/assignments/${assignment.propertyId._id}`)}
+              >
                 <div className="bg-primary/5 p-4 border-b flex justify-between items-center">
                   <div className="flex items-center gap-2 text-primary font-medium">
                     <Building2 className="h-4 w-4" /> New Request
@@ -135,14 +141,14 @@ export default function AgentAssignmentsPage() {
                   <div className="flex gap-3 pt-2">
                     <Button 
                       className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white" 
-                      onClick={() => handleRespond(assignment._id, 'Accepted')}
+                      onClick={(e) => { e.stopPropagation(); handleRespond(assignment._id, 'Accepted') }}
                     >
                       <Check className="h-4 w-4" /> Accept
                     </Button>
                     <Button 
                       variant="outline" 
                       className="flex-1 gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
-                      onClick={() => handleRespond(assignment._id, 'Rejected')}
+                      onClick={(e) => { e.stopPropagation(); handleRespond(assignment._id, 'Rejected') }}
                     >
                       <X className="h-4 w-4" /> Decline
                     </Button>

@@ -13,22 +13,20 @@ export default function BuyerDashboard() {
   const [visits, setVisits] = useState<any[]>([])
   const [inquiries, setInquiries] = useState<any[]>([])
   const [favorites, setFavorites] = useState<any[]>([])
-  const [offers, setOffers] = useState<any[]>([])
+
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [visitsRes, inquiriesRes, favsRes, offersRes] = await Promise.all([
+        const [visitsRes, inquiriesRes, favsRes] = await Promise.all([
           api.get("/interactions/visits"),
           api.get("/interactions/inquiries"),
-          api.get("/users/favorites"),
-          api.get("/interactions/offers")
+          api.get("/users/favorites")
         ])
         setVisits(visitsRes.data || [])
         setInquiries(inquiriesRes.data || [])
         setFavorites(favsRes.data || [])
-        setOffers(offersRes.data || [])
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err)
       } finally {
@@ -52,7 +50,7 @@ export default function BuyerDashboard() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Scheduled Visits</CardTitle>
@@ -83,16 +81,7 @@ export default function BuyerDashboard() {
             <p className="text-xs text-muted-foreground mt-1">Properties you've shortlisted</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Offers</CardTitle>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? "..." : offers.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Cash offers submitted</p>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* CTA Banner */}

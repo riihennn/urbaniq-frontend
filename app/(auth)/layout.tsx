@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Logo } from "@/components/ui/Logo"
+import { GuestGuard } from "@/components/layout/GuestGuard"
 
 export default function AuthLayout({
   children,
@@ -8,6 +9,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen bg-background">
+      <GuestGuard>
       <div className="flex w-full flex-col lg:flex-row">
         {/* Left Side - Brand/Image */}
         <div className="relative hidden w-1/2 lg:flex flex-col bg-muted p-10 text-white">
@@ -58,6 +60,7 @@ export default function AuthLayout({
           </div>
         </div>
       </div>
+    </GuestGuard>
     </div>
   )
 }

@@ -30,8 +30,8 @@ export default function LoginPage() {
       const { accessToken, refreshToken, ...user } = response.data
       setAuth(user, accessToken, refreshToken)
       
-      if (user.role === 'Buyer') {
-        router.push('/dashboard/buyer')
+      if (user.role === 'Buyer' || user.role === 'Owner') {
+        router.push('/')
       } else {
         router.push(`/dashboard/${user.role.toLowerCase()}`)
       }
@@ -63,7 +63,7 @@ export default function LoginPage() {
       } else {
         const { token, refreshToken, user } = data
         setAuth(user, token, refreshToken)
-        if (user.role === 'Buyer') {
+        if (user.role === 'Buyer' || user.role === 'Owner') {
           router.push('/')
         } else {
           router.push(`/dashboard/${user.role.toLowerCase()}`)
@@ -83,7 +83,7 @@ export default function LoginPage() {
       const { token, refreshToken, ...user } = response.data
       setAuth(user, token, refreshToken)
       setIsModalOpen(false)
-      if (user.role === 'Buyer') {
+      if (user.role === 'Buyer' || user.role === 'Owner') {
         router.push('/')
       } else {
         router.push(`/dashboard/${user.role.toLowerCase()}`)
