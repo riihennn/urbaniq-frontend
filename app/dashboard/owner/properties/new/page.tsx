@@ -46,6 +46,62 @@ export default function NewPropertyWizard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [previewAgent, setPreviewAgent] = useState<Agent | null>(null)
   const [commissionInfo, setCommissionInfo] = useState("")
+  // File Upload State
+  const [uploadedImages, setUploadedImages] = useState<{ original: string; thumbnail: string }[]>([])
+  const [uploadedDocuments, setUploadedDocuments] = useState<string[]>([])
+  const [docName, setDocName] = useState("")
+  const [uploadingState, setUploadingState] = useState<"idle" | "uploading" | "success" | "error">("idle")
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      setUploadingState("uploading")
+      const uploadData = new FormData()
+      uploadData.append("images", file)
+
+      const res = await api.post("/upload/images", uploadData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+
+      if (res.data.success && res.data.data.length > 0) {
+        const uploaded = res.data.data[0]
+        setUploadedImages(prev => [...prev, uploaded])
+        setFormData(prev => ({ ...prev, imagesUploaded: prev.imagesUploaded + 1 }))
+        setUploadingState("success")
+      }
+    } catch (err) {
+      console.error("Image upload failed:", err)
+      setError("Failed to upload image. Please verify your S3 configuration.")
+      setUploadingState("error")
+    }
+  }
+
+  const handleDocumentUpload = async (file: File) => {
+    try {
+      setUploadingState("uploading")
+      setDocName(file.name)
+      const uploadData = new FormData()
+      uploadData.append("document", file)
+
+      const res = await api.post("/upload/document", uploadData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+
+      if (res.data.success) {
+        setUploadedDocuments([res.data.data])
+        setFormData(prev => ({ ...prev, documentUploaded: true }))
+        setUploadingState("success")
+      }
+    } catch (err) {
+      console.error("Document upload failed:", err)
+      setError("Failed to upload document. Please verify your S3 configuration.")
+      setUploadingState("error")
+      setDocName("")
+    }
+  }
 
   const steps = [
     { id: 1, title: 'Basic Info' },
@@ -332,11 +388,8 @@ export default function NewPropertyWizard() {
           email: formData.contactEmail,
           phone: formData.contactPhone
         },
-        images: formData.imagesUploaded > 0 ? [
-           "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2075&q=80",
-           "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
-        ] : [],
-        documents: formData.documentUploaded ? ["https://example.com/demo-verification-doc.pdf"] : []
+        images: uploadedImages,
+        documents: uploadedDocuments
       }
 
       // 1. Create Property
@@ -511,21 +564,29 @@ export default function NewPropertyWizard() {
               </div>
 
               <div className="space-y-2 pt-6 border-t mt-8">
-                <label className="text-sm font-medium">Property Photos <span className="text-muted-foreground font-normal">(Optional for now)</span></label>
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Property Photos <span className="text-muted-foreground font-normal">(Optional for now)</span></label>
+                  {uploadingState === "uploading" && (
+                    <span className="text-xs text-blue-500 animate-pulse font-medium">Uploading to S3...</span>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground mb-3">Upload high-quality photos of your property.</p>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {formData.imagesUploaded > 0 && Array.from({ length: formData.imagesUploaded }).map((_, i) => (
                     <div key={i} className="relative aspect-square rounded-xl overflow-hidden border">
                        <Image 
-                         src={`https://images.unsplash.com/photo-${1600596542815 + i}?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80`} 
+                         src={uploadedImages[i]?.thumbnail || `https://images.unsplash.com/photo-${1600596542815 + i}?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80`} 
                          alt="Property preview" 
                          fill 
                          className="object-cover"
                        />
                        <button 
                          type="button"
-                         onClick={() => setFormData({...formData, imagesUploaded: formData.imagesUploaded - 1})}
+                         onClick={() => {
+                           setUploadedImages(prev => prev.filter((_, idx) => idx !== i));
+                           setFormData({...formData, imagesUploaded: formData.imagesUploaded - 1});
+                         }}
                          className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-destructive transition-colors"
                        >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -545,9 +606,10 @@ export default function NewPropertyWizard() {
                         accept="image/*"
                         className="hidden" 
                         id="image-upload" 
-                        onChange={(e) => {
+                        onChange={async (e) => {
                            if (e.target.files && e.target.files.length > 0) {
-                              setFormData({...formData, imagesUploaded: formData.imagesUploaded + 1})
+                              const file = e.target.files[0];
+                              await handleImageUpload(file);
                            }
                         }}
                       />
@@ -565,13 +627,17 @@ export default function NewPropertyWizard() {
                     <>
                       <CheckCircle2 className="w-10 h-10 text-green-500 mb-3" />
                       <p className="font-medium">Document attached successfully!</p>
-                      <p className="text-xs text-muted-foreground mt-1">property-deed-verification.pdf</p>
+                      <p className="text-xs text-muted-foreground mt-1">{docName || "property-deed-verification.pdf"}</p>
                       <Button 
                         type="button" 
                         variant="ghost" 
                         size="sm" 
                         className="mt-4 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setFormData({...formData, documentUploaded: false})}
+                        onClick={() => {
+                          setFormData({...formData, documentUploaded: false});
+                          setUploadedDocuments([]);
+                          setDocName("");
+                        }}
                       >
                         Remove
                       </Button>
@@ -583,11 +649,13 @@ export default function NewPropertyWizard() {
                       <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, or JPG (max. 10MB)</p>
                       <input 
                         type="file" 
+                        accept="application/pdf,.docx,.doc,image/*"
                         className="hidden" 
                         id="doc-upload" 
-                        onChange={(e) => {
+                        onChange={async (e) => {
                            if (e.target.files && e.target.files.length > 0) {
-                              setFormData({...formData, documentUploaded: true})
+                              const file = e.target.files[0];
+                              await handleDocumentUpload(file);
                            }
                         }}
                       />

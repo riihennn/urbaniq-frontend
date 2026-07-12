@@ -6,6 +6,8 @@ import { IProperty } from '@/types/property';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
+import { getPropertyThumbnail } from '@/lib/utils';
+
 interface PropertyCardProps {
   property: IProperty;
 }
@@ -15,7 +17,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
     <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-none bg-card">
       <div className="relative h-48 w-full overflow-hidden bg-muted">
         <Image
-          src={property.images?.[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+          src={getPropertyThumbnail(property.images?.[0])}
           alt={property.title}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"

@@ -8,6 +8,8 @@ import { Search, Building2 } from "lucide-react"
 import api from "@/lib/api"
 import Link from "next/link"
 import { useSocket } from "@/components/providers/SocketProvider"
+import { getPropertyThumbnail } from "@/lib/utils"
+
 
 export default function AdminPropertiesPage() {
   const [properties, setProperties] = useState<any[]>([])
@@ -141,7 +143,7 @@ export default function AdminPropertiesPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <div className="relative w-24 h-16 rounded-md overflow-hidden shrink-0 bg-muted">
-                            <img src={property.images?.[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=200&q=80'} alt={property.title} className="object-cover w-full h-full" />
+                            <img src={getPropertyThumbnail(property.images?.[0], 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=200&q=80')} alt={property.title} className="object-cover w-full h-full" />
                           </div>
                           <div className="flex flex-col max-w-[250px] truncate">
                             <Link href={`/dashboard/admin/properties/${property._id}`} className="hover:underline text-primary font-medium text-base text-gray-900 truncate block w-full" title={property.title}>
