@@ -109,6 +109,8 @@ export default function RegisterPage() {
     if (currentStep === 2 && role === "Agent") {
       if (!phone.trim()) return "Please enter your phone number."
       if (!experienceYears) return "Please enter your years of experience."
+      if (!profileImage) return "Please upload your profile photo."
+      if (!verificationDocument) return "Please upload your ID / verification document."
     }
     if (currentStep === 3 && role === "Agent") {
       if (!agentCity.trim()) return "Please enter your city."
@@ -309,12 +311,12 @@ export default function RegisterPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none" htmlFor="profileImage">Profile Photo <span className="text-muted-foreground font-normal">(Optional)</span></label>
-                <Input id="profileImage" type="file" accept="image/*" className="bg-muted/50 cursor-pointer" onChange={(e) => handleFileChange(e, setProfileImage)} />
+                <label className="text-sm font-medium leading-none" htmlFor="profileImage">Profile Photo <span className="text-destructive">*</span></label>
+                <Input id="profileImage" type="file" accept="image/*" className="bg-muted/50 cursor-pointer" onChange={(e) => handleFileChange(e, setProfileImage)} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none" htmlFor="verificationDocument">ID / Verification Doc <span className="text-muted-foreground font-normal">(Optional)</span></label>
-                <Input id="verificationDocument" type="file" accept="image/*,.pdf" className="bg-muted/50 cursor-pointer" onChange={(e) => handleFileChange(e, setVerificationDocument)} />
+                <label className="text-sm font-medium leading-none" htmlFor="verificationDocument">ID / Verification Doc <span className="text-destructive">*</span></label>
+                <Input id="verificationDocument" type="file" accept="image/*,.pdf" className="bg-muted/50 cursor-pointer" onChange={(e) => handleFileChange(e, setVerificationDocument)} required />
               </div>
             </div>
             <p className="text-xs text-muted-foreground">Your account will require admin verification before you can access your dashboard.</p>

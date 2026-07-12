@@ -9,6 +9,8 @@ import Link from "next/link"
 import api from "@/lib/api"
 import { useAuthStore } from "@/store/authStore"
 import { useSocket } from "@/components/providers/SocketProvider"
+import { getPropertyThumbnail } from "@/lib/utils"
+
 
 interface Property {
   _id: string;
@@ -18,7 +20,7 @@ interface Property {
   price: number;
   status: string;
   createdAt: string;
-  images?: string[];
+  images?: (string | { original: string; thumbnail: string })[];
   agentId?: any;
 }
 
@@ -164,7 +166,7 @@ export default function OwnerPropertiesPage() {
                       <td className="px-6 py-4">
                         <Link href={`/dashboard/owner/properties/${property._id}`} className="flex items-center gap-4 group">
                           <div className="relative w-24 h-16 rounded-md overflow-hidden shrink-0 bg-muted">
-                            <img src={property.images?.[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=200&q=80'} alt={property.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
+                            <img src={getPropertyThumbnail(property.images?.[0], 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=200&q=80')} alt={property.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
                           </div>
                           <div className="flex flex-col">
                             <span className="font-medium text-base text-gray-900 group-hover:text-primary transition-colors">{property.title}</span>

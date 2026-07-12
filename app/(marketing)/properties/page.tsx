@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import useAuthStore from "@/store/authStore"
+import { getPropertyThumbnail } from "@/lib/utils"
 
 interface Property {
   _id: string;
@@ -385,7 +386,7 @@ function PropertiesList() {
                       <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-100/80 group-hover:-translate-y-1 bg-white rounded-2xl shadow-sm hover:border-gray-200">
                         <div className="relative aspect-[4/3] w-full bg-gray-100 overflow-hidden">
                           <Image 
-                            src={property.images?.[0] || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
+                            src={getPropertyThumbnail(property.images?.[0])}
                             alt={property.title}
                             fill
                             unoptimized

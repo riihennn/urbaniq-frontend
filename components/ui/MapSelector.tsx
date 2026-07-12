@@ -22,7 +22,7 @@ function LocationMarker({ onSelect }: { onSelect: (lat: number, lon: number) => 
   const [position, setPosition] = useState<L.LatLng | null>(null)
   
   useMapEvents({
-    click(e) {
+    click(e: L.LeafletMouseEvent) {
       setPosition(e.latlng)
       onSelect(e.latlng.lat, e.latlng.lng)
     },

@@ -8,6 +8,8 @@ import { MapPin, BedDouble, Bath, Square, Calendar as CalendarIcon, Clock, Bookm
 import api from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import useAuthStore from "@/store/authStore"
+import { getPropertyThumbnail } from "@/lib/utils"
+
 
 export default function PropertyDetailPage() {
   const params = useParams()
@@ -165,7 +167,7 @@ export default function PropertyDetailPage() {
   if (!property) return <div className="h-screen flex items-center justify-center bg-gray-50 text-gray-500">Property not found</div>
 
   const images = property.images && property.images.length > 0 
-    ? property.images 
+    ? property.images.map((img: any) => typeof img === 'string' ? img : img.original)
     : [
         "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2075&q=80",
         "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
@@ -355,7 +357,7 @@ export default function PropertyDetailPage() {
                   {similarProperties.map((p, i) => (
                     <Link href={`/properties/${p._id}`} key={i} className="group cursor-pointer block">
                       <div className="relative aspect-[4/3] rounded-md overflow-hidden mb-3 bg-gray-100">
-                        <Image src={p.images?.[0] || images[0]} fill className="object-cover group-hover:scale-105 transition-transform duration-500" alt={p.title} unoptimized />
+                        <Image src={getPropertyThumbnail(p.images?.[0], images[0])} fill className="object-cover group-hover:scale-105 transition-transform duration-500" alt={p.title} unoptimized />
                         <div className="absolute top-2 right-2 bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded shadow-sm text-gray-900">
                           ${p.price.toLocaleString()}
                         </div>

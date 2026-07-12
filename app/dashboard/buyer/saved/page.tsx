@@ -7,6 +7,7 @@ import { Bookmark, MapPin, BedDouble, Bath, Square, Trash2 } from "lucide-react"
 import api from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { getPropertyThumbnail } from "@/lib/utils"
 
 export default function BuyerSavedPropertiesPage() {
   const [properties, setProperties] = useState<any[]>([])
@@ -60,7 +61,7 @@ export default function BuyerSavedPropertiesPage() {
             <Card key={property._id} className="overflow-hidden group flex flex-col">
               <div className="relative h-48 w-full">
                 <Image 
-                  src={property.images?.[0] || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
+                  src={getPropertyThumbnail(property.images?.[0])}
                   alt={property.title}
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
