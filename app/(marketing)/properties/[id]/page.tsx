@@ -166,7 +166,7 @@ export default function PropertyDetailPage() {
 
   if (!property) return <div className="h-screen flex items-center justify-center bg-gray-50 text-gray-500">Property not found</div>
 
-  const images = property.images && property.images.length > 0 
+  const images: string[] = property.images && property.images.length > 0 
     ? property.images.map((img: any) => typeof img === 'string' ? img : img.original)
     : [
         "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2075&q=80",
@@ -211,7 +211,7 @@ export default function PropertyDetailPage() {
               </div>
               {images.length > 1 && (
                 <div className="grid grid-cols-5 gap-2 h-24 md:h-32">
-                  {images.slice(1, 6).map((img, idx) => {
+                  {images.slice(1, 6).map((img: string, idx: number) => {
                     const isLast = idx === 4 && images.length > 6
                     const remainingCount = images.length - 5
                     return (
@@ -356,7 +356,7 @@ export default function PropertyDetailPage() {
                   <p className="text-xs text-gray-500 font-medium">Curated matches based on this listing</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {similarProperties.map((p, i) => (
+                  {similarProperties.map((p: any, i: number) => (
                     <Link href={`/properties/${p._id}`} key={i} className="group cursor-pointer block">
                       <div className="relative aspect-[4/3] rounded-md overflow-hidden mb-3 bg-gray-100">
                         <Image src={getPropertyThumbnail(p.images?.[0], images[0])} fill className="object-cover group-hover:scale-105 transition-transform duration-500" alt={p.title} unoptimized />
