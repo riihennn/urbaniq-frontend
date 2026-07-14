@@ -9,6 +9,7 @@ import Link from "next/link"
 import api from "@/lib/api"
 import { useSocket } from "@/components/providers/SocketProvider"
 import ChatBox from "@/components/ui/ChatBox"
+import { getPropertyThumbnail } from "@/lib/utils"
 
 export default function PropertyDetailsPage() {
   const { id } = useParams()
@@ -312,7 +313,7 @@ export default function PropertyDetailsPage() {
 
           {showChat && property.agentId && (
             <div className="h-[500px]">
-              <ChatBox collaborationPropertyId={property._id} propertyTitle={property.title} />
+              <ChatBox collaborationPropertyId={property._id} propertyTitle={property.title} propertyImage={getPropertyThumbnail(property.images?.[0])} />
             </div>
           )}
 
