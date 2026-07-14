@@ -1,17 +1,41 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { RoleGuard } from "@/components/layout/RoleGuard"
 import { useAuthStore } from "@/store/authStore"
-import { ShieldAlert } from "lucide-react"
+import { ShieldAlert, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import api from "@/lib/api"
 
 export default function AgentLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
+  const [checking, setChecking] = useState(false)
   const isPending = user?.role === 'Agent' && user?.isVerified === false
+
+  const checkStatus = async () => {
+    if (!user) return
+    setChecking(true)
+    try {
+      const res = await api.get('/users/me')
+      if (res.data && res.data.isVerified !== undefined) {
+        updateUser({ isVerified: res.data.isVerified })
+      }
+    } catch (err) {
+      console.error("Failed to check verification status:", err)
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  useEffect(() => {
+    if (isPending) {
+      checkStatus()
+    }
+  }, [isPending])
 
   return (
     <RoleGuard allowedRoles={['Agent']}>
@@ -33,6 +57,10 @@ export default function AgentLayout({
               <p className="text-sm text-muted-foreground">
                 We will notify you via email once your account has been approved and you can access your dashboard.
               </p>
+              <Button onClick={checkStatus} disabled={checking} className="mt-4 gap-2">
+                <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
+                {checking ? 'Checking...' : 'Check Status'}
+              </Button>
             </div>
           </div>
         )}

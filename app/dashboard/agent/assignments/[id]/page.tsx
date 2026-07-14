@@ -146,11 +146,14 @@ export default function AssignmentDetailsPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Images</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {property.images.map((img: string, idx: number) => (
-                      <div key={idx} className="relative aspect-video rounded-md overflow-hidden bg-muted">
-                        <Image src={img} alt="Property Image" fill className="object-cover" />
-                      </div>
-                    ))}
+                    {property.images.map((img: any, idx: number) => {
+                      const src = typeof img === 'string' ? img : img.original;
+                      return (
+                        <div key={idx} className="relative aspect-video rounded-md overflow-hidden bg-muted">
+                          <Image src={src} alt="Property Image" fill className="object-cover" />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

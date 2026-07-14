@@ -177,8 +177,7 @@ export default function RegisterPage() {
       } else {
         const { token, refreshToken, user } = data
         setAuth(user, token, refreshToken)
-        if (user.role === "Buyer" || user.role === "Owner") router.push("/")
-        else router.push(`/dashboard/${user.role.toLowerCase()}`)
+        router.push(`/dashboard/${user.role.toLowerCase()}`)
       }
     } catch (err: any) {
       setError(err.response?.data?.message || err.response?.data?.error || "Google authentication failed")
@@ -194,8 +193,7 @@ export default function RegisterPage() {
       const { token, refreshToken, ...user } = response.data
       setAuth(user, token, refreshToken)
       setIsModalOpen(false)
-      if (user.role === "Buyer" || user.role === "Owner") router.push("/")
-      else router.push(`/dashboard/${user.role.toLowerCase()}`)
+      router.push(`/dashboard/${user.role.toLowerCase()}`)
     } catch (err: any) {
       setError(err.response?.data?.message || err.response?.data?.error || "Google registration failed")
       throw err

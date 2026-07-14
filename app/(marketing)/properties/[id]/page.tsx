@@ -166,7 +166,7 @@ export default function PropertyDetailPage() {
 
   if (!property) return <div className="h-screen flex items-center justify-center bg-gray-50 text-gray-500">Property not found</div>
 
-  const images = property.images && property.images.length > 0 
+  const images: string[] = property.images && property.images.length > 0 
     ? property.images.map((img: any) => typeof img === 'string' ? img : img.original)
     : [
         "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2075&q=80",
@@ -209,23 +209,25 @@ export default function PropertyDetailPage() {
                   />
                 </button>
               </div>
-              <div className="grid grid-cols-5 gap-2 h-24 md:h-32">
-                {[1,2,3,4,5].map((idx) => {
-                  const img = images[idx] || images[0]
-                  const isLast = idx === 5
-                  return (
-                    <div key={idx} className="relative rounded-md overflow-hidden bg-gray-100 cursor-pointer">
-                      <Image src={img} fill className="object-cover" alt={`View ${idx+1}`} unoptimized />
-                      {isLast && (
-                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white">
-                          <span className="font-semibold text-sm">+12</span>
-                          <span className="text-[10px]">photos</span>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
+              {images.length > 1 && (
+                <div className="grid grid-cols-5 gap-2 h-24 md:h-32">
+                  {images.slice(1, 6).map((img: string, idx: number) => {
+                    const isLast = idx === 4 && images.length > 6
+                    const remainingCount = images.length - 5
+                    return (
+                      <div key={idx} className="relative rounded-md overflow-hidden bg-gray-100 cursor-pointer">
+                        <Image src={img} fill className="object-cover" alt={`View ${idx+2}`} unoptimized />
+                        {isLast && (
+                          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white">
+                            <span className="font-semibold text-sm">+{remainingCount}</span>
+                            <span className="text-[10px]">photos</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             {/* HEADER */}
@@ -354,10 +356,10 @@ export default function PropertyDetailPage() {
                   <p className="text-xs text-gray-500 font-medium">Curated matches based on this listing</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {similarProperties.map((p, i) => (
+                  {similarProperties.map((p: any, i: number) => (
                     <Link href={`/properties/${p._id}`} key={i} className="group cursor-pointer block">
                       <div className="relative aspect-[4/3] rounded-md overflow-hidden mb-3 bg-gray-100">
-                        <Image src={getPropertyThumbnail(p.images?.[0], images[0])} fill className="object-cover group-hover:scale-105 transition-transform duration-500" alt={p.title} unoptimized />
+                        <Image src={getPropertyThumbnail(p.images?.[0])} fill className="object-cover group-hover:scale-105 transition-transform duration-500" alt={p.title} unoptimized />
                         <div className="absolute top-2 right-2 bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded shadow-sm text-gray-900">
                           ${p.price.toLocaleString()}
                         </div>
