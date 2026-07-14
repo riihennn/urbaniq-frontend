@@ -145,7 +145,7 @@ export default function AdminApprovalsPage() {
                           {property.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right space-x-2">
+                      <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                         <Button 
                           variant="default" 
                           size="sm" 
@@ -153,6 +153,13 @@ export default function AdminApprovalsPage() {
                           onClick={() => updateStatus(property._id, 'Published')}
                         >
                           Approve
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => updateStatus(property._id, 'Draft')}
+                        >
+                          Reject
                         </Button>
                       </td>
                     </tr>

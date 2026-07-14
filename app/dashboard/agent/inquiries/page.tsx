@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { MessageSquare } from "lucide-react"
 import api from "@/lib/api"
 import ChatBox from "@/components/ui/ChatBox"
+import { getPropertyThumbnail } from "@/lib/utils"
 
 interface Inquiry {
   _id: string;
@@ -75,7 +76,7 @@ export default function AgentInquiriesPage() {
           </div>
           <div className="flex-1 overflow-y-auto">
             {inquiries.map((inquiry) => {
-              const image = inquiry.propertyId?.images?.[0] || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
+              const image = getPropertyThumbnail(inquiry.propertyId?.images?.[0]);
               return (
               <div 
                 key={inquiry._id} 
@@ -101,7 +102,7 @@ export default function AgentInquiriesPage() {
             <ChatBox 
               inquiryId={activeChat} 
               propertyTitle={inquiries.find(i => i._id === activeChat)?.propertyId?.title}
-              propertyImage={inquiries.find(i => i._id === activeChat)?.propertyId?.images?.[0]}
+              propertyImage={getPropertyThumbnail(inquiries.find(i => i._id === activeChat)?.propertyId?.images?.[0])}
               chatPartnerName={`${inquiries.find(i => i._id === activeChat)?.buyerId.firstName} ${inquiries.find(i => i._id === activeChat)?.buyerId.lastName}`}
             />
           ) : (

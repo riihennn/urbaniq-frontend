@@ -10,6 +10,7 @@ import Image from "next/image"
 import api from "@/lib/api"
 import { useSocket } from "@/components/providers/SocketProvider"
 import ChatBox from "@/components/ui/ChatBox"
+import { getPropertyThumbnail } from "@/lib/utils"
 
 export default function AgentPropertyDetailsPage() {
   const { id } = useParams()
@@ -235,11 +236,14 @@ export default function AgentPropertyDetailsPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Images</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {property.images.map((img: string, idx: number) => (
-                      <div key={idx} className="relative aspect-video rounded-md overflow-hidden bg-muted">
-                        <Image src={img} alt="Property Image" fill className="object-cover" />
-                      </div>
-                    ))}
+                    {property.images.map((img: any, idx: number) => {
+                      const src = typeof img === 'string' ? img : img.original;
+                      return (
+                        <div key={idx} className="relative aspect-video rounded-md overflow-hidden bg-muted">
+                          <Image src={src} alt="Property Image" fill className="object-cover" />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -295,7 +299,7 @@ export default function AgentPropertyDetailsPage() {
 
           {showChat && property.ownerId && (
             <div className="h-[500px]">
-              <ChatBox collaborationPropertyId={property._id} propertyTitle={property.title} />
+              <ChatBox collaborationPropertyId={property._id} propertyTitle={property.title} propertyImage={getPropertyThumbnail(property.images?.[0])} />
             </div>
           )}
 
