@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/authStore"
 import api from "@/lib/api"
-import { io, Socket } from "socket.io-client"
+import { useSocket } from "@/components/providers/SocketProvider"
 
 interface Message {
   _id: string
@@ -30,33 +30,18 @@ interface ChatBoxProps {
 }
 
 export default function ChatBox({ inquiryId, propertyTitle, propertyImage, chatPartnerName, collaborationPropertyId }: ChatBoxProps) {
+  const { socket } = useSocket()
   const { user } = useAuthStore()
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [socket, setSocket] = useState<Socket | null>(null)
 
   useEffect(() => {
-    // Connect to Socket
-    const newSocket = io(process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000', {
-      withCredentials: true
-    })
-    
-    const onConnect = () => {
-      if (user?._id) {
-        newSocket.emit("register", user._id)
-      }
-    }
+    if (!socket) return
 
-    if (newSocket.connected) {
-      onConnect()
-    } else {
-      newSocket.on("connect", onConnect)
-    }
-
-    newSocket.on("new_message", (msg: Message) => {
+    const handleNewMessage = (msg: Message) => {
       // Only append if the message belongs to the current inquiry or collaboration property chat
       const matchesInquiry = inquiryId && (msg as any).inquiryId === inquiryId;
       const matchesCollaboration = collaborationPropertyId && (msg as any).propertyId === collaborationPropertyId;
@@ -67,14 +52,14 @@ export default function ChatBox({ inquiryId, propertyTitle, propertyImage, chatP
           return [...prev, msg]
         })
       }
-    })
+    }
 
-    setSocket(newSocket)
+    socket.on("new_message", handleNewMessage)
 
     return () => {
-      newSocket.disconnect()
+      socket.off("new_message", handleNewMessage)
     }
-  }, [user, inquiryId, collaborationPropertyId])
+  }, [socket, inquiryId, collaborationPropertyId])
 
   useEffect(() => {
     const fetchMessages = async () => {
