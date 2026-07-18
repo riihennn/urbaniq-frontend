@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { UserCircle, LogOut, LayoutDashboard, ChevronDown, Settings, MessageSquare } from "lucide-react"
+import { UserCircle, LogOut, LayoutDashboard, ChevronDown, Settings, MessageSquare, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/store/authStore"
 import { useRouter } from "next/navigation"
@@ -13,6 +13,7 @@ export function Navbar() {
   const { user, logout } = useAuthStore()
   const router = useRouter()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = () => {
@@ -87,6 +88,14 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Mobile Menu Toggle */}
+          <button 
+            className="md:hidden p-2 text-muted-foreground hover:bg-muted rounded-md mr-1"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
           {user ? (
             <>
               <Link 
@@ -153,6 +162,48 @@ export function Navbar() {
           )}
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t bg-background absolute top-16 left-0 w-full shadow-lg flex flex-col py-4 px-6 z-40 gap-4">
+          {!user && (
+            <nav className="flex flex-col gap-4">
+              <Link
+                href="/properties"
+                className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Properties
+              </Link>
+              <Link
+                href="/register?role=agent"
+                className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                For Agents
+              </Link>
+              <Link
+                href="/register?role=owner"
+                className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                For Owners
+              </Link>
+            </nav>
+          )}
+          {user && (user.role === 'Buyer' || user.role === 'Owner') && (
+            <nav className="flex flex-col gap-4">
+              <Link
+                href="/properties"
+                className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Browse Properties
+              </Link>
+            </nav>
+          )}
+        </div>
+      )}
     </header>
   )
 }

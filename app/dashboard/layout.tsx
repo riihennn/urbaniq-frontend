@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Building2, LayoutDashboard, Bookmark, Calendar, MessageSquare, Settings, LogOut, Plus, BarChart, Home, DollarSign, CheckCircle, Briefcase } from "lucide-react"
+import { Building2, LayoutDashboard, Bookmark, Calendar, MessageSquare, Settings, LogOut, Plus, BarChart, Home, DollarSign, CheckCircle, Briefcase, Menu, X } from "lucide-react"
 import { useAuthStore } from "@/store/authStore"
 import { Logo } from "@/components/ui/Logo"
 
@@ -15,6 +15,12 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const { user, isAuthenticated, hydrated, logout } = useAuthStore()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  // Close mobile menu when pathname changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     // Only redirect after the store has been hydrated from localStorage
@@ -54,11 +60,26 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-muted/20 overflow-hidden">
+    <div className="flex h-screen bg-muted/20 overflow-hidden relative">
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
       {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r bg-background h-full">
-        <div className="flex h-16 items-center px-4 border-b flex-shrink-0">
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-background transition-transform duration-300 ease-in-out
+        md:static md:translate-x-0
+        ${isMobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}
+      `}>
+        <div className="flex h-16 items-center justify-between px-4 border-b flex-shrink-0">
           <Logo height={44} href={user?.role ? `/dashboard/${user.role.toLowerCase()}` : '/'} />
+          <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-muted-foreground p-1 hover:bg-muted rounded">
+            <X className="h-5 w-5" />
+          </button>
         </div>
         
         <div className="flex-1 overflow-y-auto py-4">
@@ -174,10 +195,18 @@ export default function DashboardLayout({
       </aside>
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="flex h-16 items-center justify-between border-b bg-background px-6 flex-shrink-0">
-          <div className="font-semibold md:hidden">Urbaniq</div>
-          <div className="flex-1" />
+      <div className="flex-1 flex flex-col h-full overflow-hidden w-full">
+        <header className="flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 flex-shrink-0">
+          <div className="flex items-center gap-3 md:hidden">
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)} 
+              className="text-muted-foreground p-2 -ml-2 hover:bg-muted rounded-md"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div className="font-semibold">Urbaniq</div>
+          </div>
+          <div className="flex-1 hidden md:block" />
           <div className="flex items-center gap-4">
              <div className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">
                {getInitials()}
